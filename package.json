@@ -23,5 +23,13 @@
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imammsu/war-tiket-poc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imammsu/war-tiket-poc/issues"
+  },
+  "homepage": "https://github.com/imammsu/war-tiket-poc#readme"
 }
