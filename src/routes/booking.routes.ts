@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { bookingService } from '../services/BookingService'
+import { bookingService, BOOKING_PAYMENT_TTL_MS } from '../services/BookingService'
+import { paymentService } from '../services/PaymentService'
 import { seatsDB, bookingsDB, invoicesDB } from '../infrastructure/InMemoryDB'
 import { scheduleService } from '../services/ScheduleService'
 
@@ -28,9 +29,9 @@ router.get('/invoices', (req, res) => {
 
 // Endpoint UTAMA: Booking tiket
 router.post('/booking', async (req, res) => {
-  const { userId, scheduleId, seatId, paymentMethod, simulateFail, simulateExpiry } = req.body
+  const { userId, scheduleId, seatId } = req.body
 
-  if (!userId || !scheduleId || !seatId || !paymentMethod) {
+  if (!userId || !scheduleId || !seatId) {
     return res.status(400).json({ error: 'Missing required fields' })
   }
 
@@ -40,13 +41,32 @@ router.post('/booking', async (req, res) => {
     return res.status(400).json({ error: 'Seat is not available or does not match schedule' })
   }
 
-  // 2. Buat booking (ini akan mentrigger flow event-driven)
-  const bookingId = bookingService.createBooking(userId, scheduleId, seatId, paymentMethod, simulateFail, simulateExpiry)
+  // 2. Buat booking dan reserve kursi. Payment diproses lewat endpoint terpisah.
+  const bookingId = bookingService.createBooking(userId, scheduleId, seatId)
 
   res.json({
-    message: 'Booking initiated. Please check console for processing logs.',
-    bookingId
+    message: 'Booking initiated. Complete payment before TTL expires.',
+    bookingId,
+    paymentUrl: `/payment/${bookingId}`,
+    expiresInMs: BOOKING_PAYMENT_TTL_MS
   })
+})
+
+// Endpoint untuk request payment setelah booking berhasil dibuat
+router.post('/payment/:bookingId', async (req, res) => {
+  const bookingId = req.params.bookingId
+  const { paymentMethod, simulateFail } = req.body
+
+  if (!bookingId) {
+    return res.status(400).json({ error: 'Missing bookingId' })
+  }
+
+  if (!paymentMethod) {
+    return res.status(400).json({ error: 'Missing paymentMethod' })
+  }
+
+  const result = await paymentService.requestPayment(bookingId, paymentMethod, Boolean(simulateFail))
+  return res.status(result.statusCode).json(result)
 })
 
 export default router

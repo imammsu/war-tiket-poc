@@ -10,8 +10,8 @@ export interface Booking {
   userId: string
   scheduleId: string // Referensi jadwal yang dipesan
   seatId: string
-  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED'
-  paymentMethod: string
+  status: 'PENDING' | 'PAYMENT_PROCESSING' | 'PAID' | 'EXPIRED' | 'CANCELLED'
+  paymentMethod?: string
 }
 
 export interface Invoice {

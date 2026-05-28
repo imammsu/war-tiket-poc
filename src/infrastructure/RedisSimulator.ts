@@ -1,7 +1,7 @@
 import { eventBus } from './EventBus'
 
 const redisCache = new Map<string, { value: any; expiredAt: number }>()
-const activeTimers = new Map<string, NodeJS.Timeout>()
+const activeTimers = new Map<string, { timer: NodeJS.Timeout; payload: any; expiredAt: number }>()
 
 /**
  * [INFRASTRUCTURE] RedisSimulator
@@ -34,6 +34,8 @@ export const redisSimulator = {
   setWithExpiry(key: string, payload: any, ttlMs: number) {
     console.log(`[REDIS]  ⚡ SET ${key} (TTL: ${ttlMs / 1000} detik)`)
 
+    this.del(key)
+    const expiredAt = Date.now() + ttlMs
     const timer = setTimeout(() => {
       console.log(`[REDIS]  ⏰ TTL EXPIRED: ${key}`)
       console.log(`[BOOKING] 📨 Keyspace Notification diterima`)
@@ -42,13 +44,38 @@ export const redisSimulator = {
       activeTimers.delete(key)
     }, ttlMs)
 
-    activeTimers.set(key, timer)
+    activeTimers.set(key, { timer, payload, expiredAt })
+  },
+
+  hasActiveExpiry(key: string) {
+    const entry = activeTimers.get(key)
+    return Boolean(entry && Date.now() < entry.expiredAt)
+  },
+
+  expireIfNeeded(key: string) {
+    const entry = activeTimers.get(key)
+    if (!entry || Date.now() < entry.expiredAt) {
+      return false
+    }
+
+    clearTimeout(entry.timer)
+    activeTimers.delete(key)
+    console.log(`[REDIS]  ⏰ TTL EXPIRED: ${key}`)
+    console.log(`[BOOKING] 📨 Keyspace Notification diterima`)
+    eventBus.publishToDLX('BOOKING_EXPIRED', entry.payload)
+    return true
+  },
+
+  getRemainingTtl(key: string) {
+    const entry = activeTimers.get(key)
+    if (!entry) return 0
+    return Math.max(0, entry.expiredAt - Date.now())
   },
 
   del(key: string) {
-    const timer = activeTimers.get(key)
-    if (timer) {
-      clearTimeout(timer)
+    const entry = activeTimers.get(key)
+    if (entry) {
+      clearTimeout(entry.timer)
       activeTimers.delete(key)
       console.log(`[REDIS]  🗑️  DEL ${key} (TTL dibatalkan)`)
       return true
