@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { bookingService } from '../services/BookingService'
+import { paymentService } from '../services/PaymentService'
 import { seatsDB, bookingsDB, invoicesDB } from '../infrastructure/InMemoryDB'
 import { scheduleService } from '../services/ScheduleService'
 
@@ -26,9 +27,9 @@ router.get('/invoices', (req, res) => {
   res.json(Array.from(invoicesDB.values()))
 })
 
-// Endpoint UTAMA: Booking tiket
+// Endpoint UTAMA: Booking tiket (hanya lock seat, payment manual)
 router.post('/booking', async (req, res) => {
-  const { userId, scheduleId, seatId, paymentMethod, simulateFail, simulateExpiry } = req.body
+  const { userId, scheduleId, seatId, paymentMethod } = req.body
 
   if (!userId || !scheduleId || !seatId || !paymentMethod) {
     return res.status(400).json({ error: 'Missing required fields' })
@@ -40,13 +41,28 @@ router.post('/booking', async (req, res) => {
     return res.status(400).json({ error: 'Seat is not available or does not match schedule' })
   }
 
-  // 2. Buat booking (ini akan mentrigger flow event-driven)
-  const bookingId = bookingService.createBooking(userId, scheduleId, seatId, paymentMethod, simulateFail, simulateExpiry)
+  // 2. Buat booking (ini akan trigger SEAT_LOCKED event)
+  const bookingId = bookingService.createBooking(userId, scheduleId, seatId, paymentMethod)
 
   res.json({
-    message: 'Booking initiated. Please check console for processing logs.',
-    bookingId
+    message: 'Booking created. Proceed to payment endpoint to complete payment.',
+    bookingId,
+    paymentUrl: `/booking/payment/${bookingId}`
   })
+})
+
+// Endpoint BARU: Manual Payment
+router.post('/booking/payment/:bookingId', async (req, res) => {
+  const { bookingId } = req.params
+  const { simulateFail } = req.body
+
+  const result = await paymentService.processManualPayment(bookingId, simulateFail === true)
+
+  if (result.success) {
+    return res.json({ message: result.message, bookingId })
+  } else {
+    return res.status(400).json({ error: result.message })
+  }
 })
 
 export default router

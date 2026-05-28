@@ -36,9 +36,11 @@ export class SeatService {
 
   private handlePaymentSuccess(payload: { seatId: string }) {
     const seat = seatsDB.get(payload.seatId)
-    if (seat) {
+    if (seat && seat.status === 'RESERVED') {
       seat.status = 'CONFIRMED'
       console.log(`[SEAT-SERVICE] ✅ Seat ${payload.seatId} CONFIRMED`)
+    } else {
+      console.log(`[SEAT-SERVICE] ⚠️ Ignored PAYMENT_SUCCESS for seat ${payload.seatId} because it is not RESERVED (current status: ${seat?.status ?? 'NOT_FOUND'})`)
     }
   }
 

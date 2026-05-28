@@ -1,4 +1,4 @@
-export interface Seat {
+export interface SeatInventory {
   id: string
   scheduleId: string // Menghubungkan kursi ke jadwal tertentu
   name: string
@@ -21,7 +21,7 @@ export interface Invoice {
   status: 'UNPAID' | 'PAID'
 }
 
-export const seatsDB = new Map<string, Seat>()
+export const seatsDB = new Map<string, SeatInventory>()
 export const bookingsDB = new Map<string, Booking>()
 export const invoicesDB = new Map<string, Invoice>()
 

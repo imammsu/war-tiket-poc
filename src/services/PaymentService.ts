@@ -1,4 +1,5 @@
 import { eventBus } from '../infrastructure/EventBus'
+import { bookingsDB } from '../infrastructure/InMemoryDB'
 import { BCAStrategy } from '../patterns/strategy/BCAStrategy'
 import { MandiriStrategy } from '../patterns/strategy/MandiriStrategy'
 import { QRISStrategy } from '../patterns/strategy/QRISStrategy'
@@ -9,35 +10,42 @@ import { PaymentStrategy } from '../patterns/strategy/PaymentStrategy'
 /**
  * [SERVICE] PaymentService
  * Menangani transaksi pembayaran menggunakan Strategy Pattern.
+ * Payment dipicu manual, bukan otomatis.
  */
 export class PaymentService {
-  constructor() {
-    this.registerListeners()
-  }
+  /**
+   * Proses pembayaran manual untuk booking yang pending
+   */
+  public async processManualPayment(bookingId: string, simulateFail: boolean = false): Promise<{ success: boolean; message: string }> {
+    const booking = bookingsDB.get(bookingId)
 
-  private registerListeners() {
-    // SAGA STEP: Menanggapi kursi yang sudah berhasil dikunci
-    eventBus.on('SEAT_LOCKED', (payload) => this.handleSeatLocked(payload))
-  }
-
-  private async handleSeatLocked(payload: any) {
-    const { bookingId, paymentMethod, simulateFail, simulateExpiry } = payload
-    console.log(`[PAYMENT-SERVICE] 💳 Processing payment for booking ${bookingId} via ${paymentMethod}`)
-
-    if (simulateExpiry) {
-      // Simulasi delay panjang untuk memicu TIME-BASED CIRCUIT (TTL)
-      console.log(`[PAYMENT-SERVICE] ⏳ Simulating long payment delay (20s) for TTL expiry test...`)
-      await new Promise(resolve => setTimeout(resolve, 20000))
+    if (!booking) {
+      return { success: false, message: 'Booking not found' }
     }
+
+    if (booking.status !== 'PENDING') {
+      return { success: false, message: `Booking status is ${booking.status}, cannot process payment` }
+    }
+
+    console.log(`[PAYMENT-SERVICE] 💳 Processing manual payment for booking ${bookingId} via ${booking.paymentMethod}`)
 
     // [PATTERN] STRATEGY: Memilih metode pembayaran secara dinamis
     let strategy: PaymentStrategy
-    switch (paymentMethod) {
-      case 'BCA': strategy = new BCAStrategy(); break
-      case 'MANDIRI': strategy = new MandiriStrategy(); break
-      case 'QRIS': strategy = new QRISStrategy(); break
-      case 'E-WALLET': strategy = new EWalletStrategy(); break
-      default: strategy = new QRISStrategy()
+    switch (booking.paymentMethod) {
+      case 'BCA':
+        strategy = new BCAStrategy()
+        break
+      case 'MANDIRI':
+        strategy = new MandiriStrategy()
+        break
+      case 'QRIS':
+        strategy = new QRISStrategy()
+        break
+      case 'E-WALLET':
+        strategy = new EWalletStrategy()
+        break
+      default:
+        strategy = new QRISStrategy()
     }
 
     const proxy = new PaymentGatewayProxy(strategy)
@@ -45,10 +53,12 @@ export class PaymentService {
 
     if (success) {
       // SAGA SUCCESS STEP
-      eventBus.publishToTopicExchange('PAYMENT_SUCCESS', payload)
+      eventBus.publishToTopicExchange('PAYMENT_SUCCESS', { bookingId, seatId: booking.seatId })
+      return { success: true, message: 'Payment successful' }
     } else {
       // SAGA FAILED STEP -> Memicu Kompensasi
-      eventBus.publishToTopicExchange('PAYMENT_FAILED', payload)
+      eventBus.publishToTopicExchange('PAYMENT_FAILED', { bookingId, seatId: booking.seatId })
+      return { success: false, message: 'Payment failed' }
     }
   }
 }

@@ -20,7 +20,7 @@ export class BookingService {
     eventBus.on('DLX:BOOKING_EXPIRED', (payload) => this.handleExpired(payload))
   }
 
-  public createBooking(userId: string, scheduleId: string, seatId: string, paymentMethod: string, simulateFail: boolean = false, simulateExpiry: boolean = false) {
+  public createBooking(userId: string, scheduleId: string, seatId: string, paymentMethod: string) {
     const bookingId = `BK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
     const booking = {
       id: bookingId,
@@ -33,8 +33,8 @@ export class BookingService {
     bookingsDB.set(bookingId, booking)
     console.log(`[BOOKING-SERVICE] 📝 Booking ${bookingId} created for user ${userId} on schedule ${scheduleId}`)
     
-    // SAGA START: Inisiasi proses pemesanan (Choreography)
-    eventBus.publishToTopicExchange('BOOKING_INITIATED', { bookingId, scheduleId, seatId, userId, paymentMethod, simulateFail, simulateExpiry })
+    // SAGA START: Inisiasi proses pemesanan (hanya lock seat, payment manual)
+    eventBus.publishToTopicExchange('BOOKING_INITIATED', { bookingId, scheduleId, seatId, userId, paymentMethod })
     return bookingId
   }
 
@@ -46,10 +46,12 @@ export class BookingService {
 
   private handlePaymentSuccess(payload: { bookingId: string }) {
     const booking = bookingsDB.get(payload.bookingId)
-    if (booking) {
+    if (booking && booking.status === 'PENDING') {
       booking.status = 'PAID'
       console.log(`[BOOKING-SERVICE] ✅ Booking ${payload.bookingId} status updated to PAID`)
       redisSimulator.del(`booking_ttl:${payload.bookingId}`)
+    } else {
+      console.log(`[BOOKING-SERVICE] ⚠️ Ignored PAYMENT_SUCCESS for booking ${payload.bookingId} because status is ${booking?.status ?? 'NOT_FOUND'}`)
     }
   }
 

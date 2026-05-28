@@ -1,4 +1,4 @@
-import { invoicesDB } from '../infrastructure/InMemoryDB'
+import { invoicesDB, bookingsDB } from '../infrastructure/InMemoryDB'
 import { eventBus } from '../infrastructure/EventBus'
 
 export class InvoiceService {
@@ -9,6 +9,8 @@ export class InvoiceService {
   private registerListeners() {
     eventBus.on('SEAT_LOCKED', (payload) => this.handleSeatLocked(payload))
     eventBus.on('PAYMENT_SUCCESS', (payload) => this.handlePaymentSuccess(payload))
+    eventBus.on('PAYMENT_FAILED', (payload) => this.handlePaymentFailed(payload))
+    eventBus.on('DLX:BOOKING_EXPIRED', (payload) => this.handleBookingExpired(payload))
   }
 
   private handleSeatLocked(payload: { bookingId: string }) {
@@ -23,12 +25,25 @@ export class InvoiceService {
   }
 
   private handlePaymentSuccess(payload: { bookingId: string }) {
-    for (const invoice of invoicesDB.values()) {
-      if (invoice.bookingId === payload.bookingId) {
-        invoice.status = 'PAID'
-        console.log(`[INVOICE-SERVICE] ✅ Invoice ${invoice.id} status updated to PAID`)
+    const booking = bookingsDB.get(payload.bookingId)
+    if (booking && booking.status === 'PENDING') {
+      for (const invoice of invoicesDB.values()) {
+        if (invoice.bookingId === payload.bookingId) {
+          invoice.status = 'PAID'
+          console.log(`[INVOICE-SERVICE] ✅ Invoice ${invoice.id} status updated to PAID`)
+        }
       }
+    } else {
+      console.log(`[INVOICE-SERVICE] ⚠️ Ignored PAYMENT_SUCCESS for booking ${payload.bookingId} because booking status is ${booking?.status ?? 'NOT_FOUND'}`)
     }
+  }
+
+  private handlePaymentFailed(payload: { bookingId: string }) {
+    console.log(`[INVOICE-SERVICE] ⚠️ Payment failed for booking ${payload.bookingId}; invoice remains UNPAID`)
+  }
+
+  private handleBookingExpired(payload: { bookingId: string }) {
+    console.log(`[INVOICE-SERVICE] ⚠️ Booking ${payload.bookingId} expired; invoice remains UNPAID`)
   }
 }
 
