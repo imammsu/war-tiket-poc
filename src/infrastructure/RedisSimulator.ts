@@ -32,13 +32,13 @@ export const redisSimulator = {
    * Menjalankan callback (event) jika data tidak dihapus sebelum batas waktu.
    */
   setWithExpiry(key: string, payload: any, ttlMs: number) {
-    console.log(`[REDIS]  ⚡ SET ${key} (TTL: ${ttlMs / 1000} detik)`)
+    console.log(`[REDIS] SET ${key} (TTL: ${ttlMs / 1000} detik)`)
 
     this.del(key)
     const expiredAt = Date.now() + ttlMs
     const timer = setTimeout(() => {
-      console.log(`[REDIS]  ⏰ TTL EXPIRED: ${key}`)
-      console.log(`[BOOKING] 📨 Keyspace Notification diterima`)
+      console.log(`[REDIS]  TTL EXPIRED: ${key}`)
+      console.log(`[BOOKING] Keyspace Notification diterima`)
       // Trigger event untuk Saga Compensating Transaction
       eventBus.publishToDLX('BOOKING_EXPIRED', payload)
       activeTimers.delete(key)
@@ -60,8 +60,8 @@ export const redisSimulator = {
 
     clearTimeout(entry.timer)
     activeTimers.delete(key)
-    console.log(`[REDIS]  ⏰ TTL EXPIRED: ${key}`)
-    console.log(`[BOOKING] 📨 Keyspace Notification diterima`)
+    console.log(`[REDIS]  TTL EXPIRED: ${key}`)
+    console.log(`[BOOKING] Keyspace Notification diterima`)
     eventBus.publishToDLX('BOOKING_EXPIRED', entry.payload)
     return true
   },
@@ -77,7 +77,7 @@ export const redisSimulator = {
     if (entry) {
       clearTimeout(entry.timer)
       activeTimers.delete(key)
-      console.log(`[REDIS]  🗑️  DEL ${key} (TTL dibatalkan)`)
+      console.log(`[REDIS]  DEL ${key} (TTL dibatalkan)`)
       return true
     }
     return false

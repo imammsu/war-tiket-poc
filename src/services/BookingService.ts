@@ -36,7 +36,7 @@ export class BookingService {
       status: 'PENDING' as const
     }
     bookingsDB.set(bookingId, booking)
-    console.log(`[BOOKING-SERVICE] 📝 Booking ${bookingId} created for user ${userId} on schedule ${scheduleId}`)
+    console.log(`[BOOKING-SERVICE] Booking ${bookingId} created for user ${userId} on schedule ${scheduleId}`)
     
     // SAGA START: Inisiasi reservasi kursi. Payment dipicu endpoint terpisah.
     eventBus.publishToTopicExchange('BOOKING_INITIATED', { bookingId, scheduleId, seatId, userId })
@@ -44,7 +44,7 @@ export class BookingService {
   }
 
   private handleSeatLocked(payload: { bookingId: string; seatId: string }) {
-    console.log(`[BOOKING-SERVICE] ⏱️ Setting TTL for booking ${payload.bookingId}`)
+    console.log(`[BOOKING-SERVICE] Setting TTL for booking ${payload.bookingId}`)
     // [PATTERN] TIME-BASED CIRCUIT: Mengatur batas waktu pembayaran di Redis
     redisSimulator.setWithExpiry(`booking_ttl:${payload.bookingId}`, payload, BOOKING_PAYMENT_TTL_MS)
   }
@@ -53,7 +53,7 @@ export class BookingService {
     const booking = bookingsDB.get(payload.bookingId)
     if (booking && booking.status === 'PENDING') {
       booking.status = 'CANCELLED'
-      console.log(`[BOOKING-SERVICE] ❌ Booking ${payload.bookingId} cancelled because seat lock failed`)
+      console.log(`[BOOKING-SERVICE] Booking ${payload.bookingId} cancelled because seat lock failed`)
     }
   }
 
@@ -64,7 +64,7 @@ export class BookingService {
       if (payload.paymentMethod) {
         booking.paymentMethod = payload.paymentMethod
       }
-      console.log(`[BOOKING-SERVICE] ✅ Booking ${payload.bookingId} status updated to PAID`)
+      console.log(`[BOOKING-SERVICE] Booking ${payload.bookingId} status updated to PAID`)
       redisSimulator.del(`booking_ttl:${payload.bookingId}`)
     }
   }
@@ -73,7 +73,7 @@ export class BookingService {
     const booking = bookingsDB.get(payload.bookingId)
     if (booking && booking.status === 'PAYMENT_PROCESSING') {
       booking.status = 'CANCELLED'
-      console.log(`[BOOKING-SERVICE] ❌ Booking ${payload.bookingId} CANCELLED (Payment Failed)`)
+      console.log(`[BOOKING-SERVICE] Booking ${payload.bookingId} CANCELLED (Payment Failed)`)
       redisSimulator.del(`booking_ttl:${payload.bookingId}`)
     }
   }
@@ -82,7 +82,7 @@ export class BookingService {
     const booking = bookingsDB.get(payload.bookingId)
     if (booking && booking.status === 'PENDING') {
       booking.status = 'EXPIRED'
-      console.log(`[BOOKING-SERVICE] 🔴 Booking ${payload.bookingId} EXPIRED`)
+      console.log(`[BOOKING-SERVICE] Booking ${payload.bookingId} EXPIRED`)
     }
   }
 }

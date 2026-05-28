@@ -21,16 +21,16 @@ export class PaymentGatewayProxy {
 
         const result = await this.strategy.pay(amount)
         if (!result) {
-          console.error(`[PROXY] ❌ Pembayaran ditolak oleh strategy ${this.strategy.getName()}`)
+          console.error(`[PROXY] Pembayaran ditolak oleh strategy ${this.strategy.getName()}`)
           return false
         }
 
-        console.log(`[PROXY] ✅ Pembayaran berhasil via ${this.strategy.getName()}`)
+        console.log(`[PROXY] Pembayaran berhasil via ${this.strategy.getName()}`)
         return result
       } catch (error: any) {
-        console.warn(`[PROXY] ⚠️ Percobaan #${attempts} gagal: ${error.message}`)
+        console.warn(`[PROXY] Percobaan #${attempts} gagal: ${error.message}`)
         if (attempts >= maxRetries) {
-          console.error(`[PROXY] ❌ Mencapai batas percobaan.`)
+          console.error(`[PROXY] Mencapai batas percobaan.`)
           return false
         }
       }

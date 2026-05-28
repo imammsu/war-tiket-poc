@@ -11,7 +11,7 @@ class EventBus extends EventEmitter {
    * Mengirim pesan ke berbagai subscriber berdasarkan event/topik.
    */
   public publishToTopicExchange(event: string, payload: any) {
-    console.log(`[RABBITMQ] 📤 Topic Exchange — publish: ${event}`)
+    console.log(`[RABBITMQ] Topic Exchange — publish: ${event}`)
     this.emit(event, payload)
   }
 
@@ -21,7 +21,7 @@ class EventBus extends EventEmitter {
    * Dalam PoC ini, dipicu oleh Redis Keyspace Notification.
    */
   public publishToDLX(event: string, payload: any) {
-    console.log(`[RABBITMQ] 🔴 Dead Letter Exchange — route: ${event}`)
+    console.log(`[RABBITMQ] Dead Letter Exchange — route: ${event}`)
     this.emit(`DLX:${event}`, payload)
   }
 }

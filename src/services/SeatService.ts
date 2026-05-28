@@ -26,10 +26,10 @@ export class SeatService {
     // [PATTERN] STATE MANAGEMENT: Transisi dari AVAILABLE ke RESERVED
     if (seat && seat.status === 'AVAILABLE') {
       seat.status = 'RESERVED'
-      console.log(`[SEAT-SERVICE] 🔒 Seat ${payload.seatId} LOCKED for booking ${payload.bookingId}`)
+      console.log(`[SEAT-SERVICE] Seat ${payload.seatId} LOCKED for booking ${payload.bookingId}`)
       eventBus.publishToTopicExchange('SEAT_LOCKED', payload)
     } else {
-      console.error(`[SEAT-SERVICE] ❌ Seat ${payload.seatId} is NOT AVAILABLE`)
+      console.error(`[SEAT-SERVICE] Seat ${payload.seatId} is NOT AVAILABLE`)
       eventBus.publishToTopicExchange('SEAT_LOCK_FAILED', payload)
     }
   }
@@ -38,7 +38,7 @@ export class SeatService {
     const seat = seatsDB.get(payload.seatId)
     if (seat && seat.status === 'RESERVED') {
       seat.status = 'CONFIRMED'
-      console.log(`[SEAT-SERVICE] ✅ Seat ${payload.seatId} CONFIRMED`)
+      console.log(`[SEAT-SERVICE] Seat ${payload.seatId} CONFIRMED`)
     }
   }
 
@@ -46,7 +46,7 @@ export class SeatService {
     const seat = seatsDB.get(payload.seatId)
     if (seat && seat.status === 'RESERVED') {
       seat.status = 'AVAILABLE'
-      console.log(`[SEAT-SERVICE] 🔓 Seat ${payload.seatId} RELEASED (Payment Failed)`)
+      console.log(`[SEAT-SERVICE] Seat ${payload.seatId} RELEASED (Payment Failed)`)
     }
   }
 
@@ -54,7 +54,7 @@ export class SeatService {
     const seat = seatsDB.get(payload.seatId)
     if (seat && seat.status === 'RESERVED') {
       seat.status = 'AVAILABLE'
-      console.log(`[SEAT-SERVICE] 🔓 Seat ${payload.seatId} RELEASED (Expired)`)
+      console.log(`[SEAT-SERVICE] Seat ${payload.seatId} RELEASED (Expired)`)
     }
   }
 }

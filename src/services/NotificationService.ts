@@ -12,7 +12,7 @@ export class NotificationService {
   }
 
   private send(message: string) {
-    console.log(`[NOTIFICATION-SERVICE] 🔔 Push Notification: "${message}"`)
+    console.log(`[NOTIFICATION-SERVICE] Push Notification: "${message}"`)
   }
 }
 

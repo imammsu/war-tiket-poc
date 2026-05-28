@@ -24,7 +24,7 @@ export class InvoiceService {
       amount: 150000,
       status: 'PAID'
     })
-    console.log(`[INVOICE-SERVICE] 📄 Invoice ${invoiceId} generated after payment success for booking ${payload.bookingId}`)
+    console.log(`[INVOICE-SERVICE] Invoice ${invoiceId} generated after payment success for booking ${payload.bookingId}`)
   }
 }
 

@@ -31,7 +31,7 @@ app.use('/', bookingRoutes)
 
 app.listen(PORT, () => {
   console.log('================================================')
-  console.log(`🚀 [SERVER] Berjalan di http://localhost:${PORT}`)
+  console.log(`[SERVER] Berjalan di http://localhost:${PORT}`)
   console.log('================================================')
   console.log('Gunakan curl atau Postman untuk mencoba skenario:')
   console.log('1. Booking: POST /booking dengan {"userId":"U1","scheduleId":"SCH-001","seatId":"SCH001-A01"}')

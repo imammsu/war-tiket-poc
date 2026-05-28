@@ -46,7 +46,7 @@ export class PaymentService {
       return paymentStart.result
     }
 
-    console.log(`[PAYMENT-SERVICE] 💳 Processing payment for booking ${bookingId} via ${paymentMethod}`)
+    console.log(`[PAYMENT-SERVICE] Processing payment for booking ${bookingId} via ${paymentMethod}`)
 
     const proxy = new PaymentGatewayProxy(paymentStrategy)
     const success = await proxy.processPayment(150000)
@@ -138,7 +138,7 @@ export class PaymentService {
 
     redisSimulator.del(ttlKey)
     booking.status = 'PAYMENT_PROCESSING'
-    console.log(`[PAYMENT-SERVICE] ⏱️ TTL stopped because payment request was received for booking ${bookingId}`)
+    console.log(`[PAYMENT-SERVICE] TTL stopped because payment request was received for booking ${bookingId}`)
     return {
       ok: true,
       booking
